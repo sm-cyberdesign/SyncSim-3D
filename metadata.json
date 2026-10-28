@@ -1,0 +1,8 @@
+{
+  "name": "OrgFlow 3D - Live Organizational Simulation & Analytics",
+  "description": "Interactive 3D organizational levels simulation with real-time synchronized data visualizations, cinematic workflow playback, historical telemetry, and multi-user parameter collaboration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
