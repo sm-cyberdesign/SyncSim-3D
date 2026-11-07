@@ -1,6 +1,6 @@
 {
-  "name": "OrgFlow 3D - Live Organizational Simulation & Analytics",
-  "description": "Interactive 3D organizational levels simulation with real-time synchronized data visualizations, cinematic workflow playback, historical telemetry, and multi-user parameter collaboration.",
+  "name": "SyncSim 3D — Operation Silent Ledger",
+  "description": "Interactive 3D presentation and facilitator-controlled tabletop cybersecurity exercise for Meridian Trust Financial, featuring multi-tier infrastructure, 14 injects across 4 modules, and three specialized AI agent personas.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

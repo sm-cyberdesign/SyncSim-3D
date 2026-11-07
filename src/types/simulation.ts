@@ -7,6 +7,19 @@ export type SimulationMode = 'live' | 'historical';
 
 export type CameraPreset = 'overview' | 'executive' | 'engineering' | 'cloud' | 'market' | 'cinematic';
 
+export interface HardwareSpec {
+  serverChassis: string;
+  rackUnits: string;
+  processor: string;
+  memoryRam: string;
+  accelerators?: string;
+  storageSan: string;
+  powerDrawKw: number;
+  networkFabric: string;
+  coolingMode: string;
+  operatingTempC: number;
+}
+
 export interface DepartmentNode {
   id: string;
   levelId: number; // 1: Market, 2: Cloud, 3: Engineering, 4: Executive
@@ -20,6 +33,7 @@ export interface DepartmentNode {
   position: [number, number, number]; // [x, y, z] relative or world
   color: string;
   blockers: string[];
+  hardware?: HardwareSpec;
 }
 
 export interface OrgLevelInfo {
@@ -28,7 +42,14 @@ export interface OrgLevelInfo {
   subname: string;
   yPosition: number;
   accentColor: string;
+  badge?: string;
   description: string;
+  imageUrl: string;
+  imageAlt: string;
+  systemArchitecture: string;
+  hardwareCluster: string;
+  rackCount: number;
+  totalPduPowerKw: number;
   kpis: {
     primaryMetric: string;
     primaryValue: string;

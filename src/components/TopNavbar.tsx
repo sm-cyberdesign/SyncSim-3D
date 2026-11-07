@@ -6,40 +6,51 @@
 import React from 'react';
 import {
   Activity,
-  History,
-  Video,
+  Sparkles,
+  Shield,
+  FileText,
+  Clock,
   Volume2,
   VolumeX,
+  Video,
   RotateCcw,
-  Users,
-  Compass,
-  Tag,
-  Mic,
-  MicOff,
-  Settings,
-  Layers,
+  BookOpen,
+  QrCode,
+  Sliders,
+  Smartphone,
+  Tv,
 } from 'lucide-react';
-import { SimulationMode, Collaborator } from '../types/simulation';
+import { AppMode, ScenarioInjectPart } from '../types/exercise';
 import { soundEngine } from '../utils/audio';
-import { EmotionalTone, EMOTIONAL_TONE_PROFILES } from '../utils/voice';
+import { PhaseStepIndicator } from './PhaseStepIndicator';
+
+export type MainAppView = 'landing' | 'projector' | 'shared_3d' | 'host' | 'participant';
 
 interface TopNavbarProps {
-  mode: SimulationMode;
-  onSetMode: (mode: SimulationMode) => void;
+  mode: AppMode;
+  onSetMode: (mode: AppMode) => void;
   isCinematicMode: boolean;
   onToggleCinematicMode: () => void;
-  collaborators: Collaborator[];
-  isMuted: boolean;
-  onToggleMute: () => void;
-  onResetView: () => void;
-  onOpenCollaborators: () => void;
-  alignmentScore: number;
-  showLabels: boolean;
-  onToggleLabels: () => void;
+  isFacilitatorView: boolean;
+  onToggleFacilitatorView: () => void;
   isVoiceEnabled: boolean;
   onToggleVoice: () => void;
   onOpenVoiceSettings: () => void;
-  currentTone: EmotionalTone;
+  onOpenRecordingModal: () => void;
+  onOpenTextAlternative: () => void;
+  onOpenFlowGuide: () => void;
+  exerciseElapsedSeconds: number;
+  currentInject: ScenarioInjectPart;
+  currentPartIndex: number;
+  onSelectPartIndex?: (index: number) => void;
+  onResetView: () => void;
+  
+  // Multiplayer props
+  activeView: MainAppView;
+  onSelectView: (view: MainAppView) => void;
+  sessionCode?: string;
+  connectedCount?: number;
+  onOpenQRModal?: () => void;
 }
 
 export const TopNavbar: React.FC<TopNavbarProps> = ({
@@ -47,199 +58,238 @@ export const TopNavbar: React.FC<TopNavbarProps> = ({
   onSetMode,
   isCinematicMode,
   onToggleCinematicMode,
-  collaborators,
-  isMuted,
-  onToggleMute,
-  onResetView,
-  onOpenCollaborators,
-  alignmentScore,
-  showLabels,
-  onToggleLabels,
+  isFacilitatorView,
+  onToggleFacilitatorView,
   isVoiceEnabled,
   onToggleVoice,
   onOpenVoiceSettings,
-  currentTone,
+  onOpenRecordingModal,
+  onOpenTextAlternative,
+  onOpenFlowGuide,
+  exerciseElapsedSeconds,
+  currentInject,
+  currentPartIndex,
+  onSelectPartIndex,
+  onResetView,
+  activeView = 'shared_3d',
+  onSelectView,
+  sessionCode = 'SL-SILENT',
+  connectedCount = 0,
+  onOpenQRModal,
 }) => {
+  const formatTimer = (totalSec: number) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 pointer-events-none p-3.5 flex items-center justify-between">
-      {/* Left: Branding & App Spec Badge */}
-      <div className="pointer-events-auto flex items-center gap-3">
-        <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-900/95 border border-slate-700/80 shadow-xl shadow-black/50 text-slate-100">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20">
-            <Activity className="w-4 h-4 text-slate-950 font-bold" />
+    <header className="fixed top-0 left-0 right-0 z-30 pointer-events-none p-2 sm:p-3 flex items-center justify-between gap-2 max-w-full">
+      {/* Zone 1: Brand Wordmark & Multiplayer Mode Switcher */}
+      <div className="pointer-events-auto flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 sm:py-2 bg-slate-900/95 border border-slate-800 shadow-xl shadow-black/60 text-slate-100">
+          <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+            <Shield className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold tracking-tight text-white leading-none">
-                OrgFlow 3D
-              </h1>
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-700/50 text-cyan-300">
-                Live 4-Tier
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-xs sm:text-sm font-bold tracking-tight text-white whitespace-nowrap">
+                SyncSim 3D
+              </span>
+              <span className="text-slate-500 text-xs hidden sm:inline">·</span>
+              <span className="text-xs font-medium text-cyan-400 whitespace-nowrap hidden sm:inline">
+                Operation Silent Ledger
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 leading-tight mt-0.5">
-              Organizational Levels Simulation & Analytics
-            </p>
+            <div className="text-[10px] text-slate-400 leading-tight flex items-center gap-1.5 whitespace-nowrap font-mono">
+              <span className="text-amber-400">{sessionCode}</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-300">{connectedCount} Joined</span>
+            </div>
           </div>
         </div>
 
-        {/* View Mode Toggle: Live vs Historical */}
-        <div className="pointer-events-auto flex items-center bg-slate-900/95 p-1 rounded-xl border border-slate-700/80 shadow-xl shadow-black/50">
+        {/* Connected Interfaces Selector */}
+        <div className="hidden lg:flex items-center bg-slate-900/95 p-0.5 border border-slate-800 shadow-xl shadow-black/60 font-mono text-xs">
           <button
-            onClick={() => {
-              onSetMode('live');
-              soundEngine.playSelect();
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              mode === 'live'
-                ? 'bg-cyan-500 text-slate-950 shadow-sm'
+            onClick={() => onSelectView('landing')}
+            className={`px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+              activeView === 'landing'
+                ? 'bg-slate-700 text-white'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
+            title="Welcome / Home Screen"
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Simulation Mode</span>
+            <span>Home</span>
           </button>
           <button
-            onClick={() => {
-              onSetMode('historical');
-              soundEngine.playSelect();
-            }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              mode === 'historical'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
+            onClick={() => onSelectView('projector')}
+            className={`px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+              activeView === 'projector'
+                ? 'bg-indigo-600 text-white'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
+            title="Big Screen / Projector View"
           >
-            <History className="w-3.5 h-3.5" />
-            <span>Historical Data View</span>
+            <Tv className="w-3.5 h-3.5" />
+            <span>Big Screen</span>
           </button>
+          <button
+            onClick={() => onSelectView('shared_3d')}
+            className={`px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+              activeView === 'shared_3d'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Command Center 3D View"
+          >
+            <span>3D Model</span>
+          </button>
+          <button
+            onClick={() => onSelectView('participant')}
+            className={`px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+              activeView === 'participant'
+                ? 'bg-emerald-600 text-white'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Mobile Participant View"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>Participant</span>
+          </button>
+          <button
+            onClick={() => onSelectView('host')}
+            className={`px-2.5 py-1 text-[11px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+              activeView === 'host'
+                ? 'bg-amber-600 text-white'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Facilitator Control Console"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Facilitator</span>
+          </button>
+        </div>
+
+        {/* Join QR Button */}
+        {onOpenQRModal && (
+          <button
+            onClick={onOpenQRModal}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-semibold shadow-md transition-colors whitespace-nowrap cursor-pointer"
+            title="Display Join QR Code for Players"
+          >
+            <QrCode className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Join QR</span>
+          </button>
+        )}
+      </div>
+
+      {/* Zone 2: Visual 4-Phase Step Indicator */}
+      <div className="pointer-events-auto flex items-center gap-2">
+        <PhaseStepIndicator
+          currentPartIndex={currentPartIndex}
+          onSelectPartIndex={onSelectPartIndex}
+        />
+
+        {/* Clocks & Flow Guide on wider viewports */}
+        <div className="hidden 2xl:flex items-center gap-3 bg-slate-900/95 px-3 py-2 border border-slate-800 shadow-xl shadow-black/60 text-xs text-slate-300">
+          <button
+            onClick={onOpenFlowGuide}
+            className="flex items-center gap-1.5 text-xs font-medium text-cyan-300 hover:text-cyan-200 transition-colors whitespace-nowrap pr-2.5 border-r border-slate-800 cursor-pointer"
+            title="Open Step-by-Step Tabletop Flow Guide"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Flow Guide</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
+            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span className="text-slate-500 uppercase tracking-wider text-[10px]">Clock:</span>
+            <span className="font-mono tabular-nums font-bold text-white">
+              {formatTimer(exerciseElapsedSeconds)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Right: Cinematic Director Mode, Multi-User Team Alignment & Settings */}
-      <div className="pointer-events-auto flex items-center gap-2.5">
-        {/* Cinematic Director Mode (Video Clip View) */}
+      {/* Zone 3: Actions (Facilitator Toggle, Audio, Flow Guide, Screen Recording) */}
+      <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Flow Guide Button (visible on md to xl screens) */}
+        <button
+          onClick={onOpenFlowGuide}
+          className="hidden md:flex 2xl:hidden px-2.5 py-1.5 bg-slate-900/95 border border-slate-800 text-cyan-300 hover:text-cyan-200 text-xs font-medium items-center gap-1.5 shadow-md transition-colors whitespace-nowrap cursor-pointer"
+          title="Open Step-by-Step Exercise Flow Guide"
+        >
+          <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden lg:inline">Flow Guide</span>
+        </button>
+
+        {/* Facilitator View Toggle */}
         <button
           onClick={() => {
-            onToggleCinematicMode();
+            onToggleFacilitatorView();
             soundEngine.playSelect();
           }}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all shadow-xl shadow-black/50 ${
-            isCinematicMode
-              ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-500 shadow-rose-900/40 animate-none'
-              : 'bg-slate-900/95 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white'
+          className={`px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md whitespace-nowrap cursor-pointer border ${
+            isFacilitatorView
+              ? 'bg-amber-500 text-slate-950 font-bold border-amber-400'
+              : 'bg-slate-900/95 hover:bg-slate-800 text-slate-300 border-slate-800'
           }`}
-          title="Watch automated video-style walkthrough of organizational levels"
+          title="Toggle Director / Facilitator Guidance & Evidence Controls"
         >
-          <Video className="w-4 h-4 text-cyan-400" />
-          <span>{isCinematicMode ? 'Exit Director Clip' : 'Director Video Mode'}</span>
+          <Shield className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{isFacilitatorView ? 'Facilitator View' : 'Player View'}</span>
+          <span className="sm:hidden">{isFacilitatorView ? 'Director' : 'Player'}</span>
         </button>
 
-        {/* Multi-User Collaboration Alignment Badge */}
+        {/* Accessible Non-3D Text Alternative View */}
         <button
-          onClick={() => {
-            onOpenCollaborators();
-            soundEngine.playSelect();
-          }}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900/95 border border-slate-700/80 shadow-xl shadow-black/50 hover:bg-slate-800 transition-colors"
-          title="View team alignment and shared parameter proposals"
+          onClick={onOpenTextAlternative}
+          className="px-2 sm:px-2.5 py-1.5 bg-slate-900/95 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 shadow-md transition-colors whitespace-nowrap cursor-pointer"
+          title="Accessible Non-3D Tabular View"
         >
-          <div className="flex -space-x-1.5 overflow-hidden">
-            {collaborators.map(c => (
-              <div
-                key={c.id}
-                style={{ backgroundColor: c.avatarColor }}
-                className="w-5 h-5 rounded-full ring-2 ring-slate-900 flex items-center justify-center text-[9px] font-bold text-white uppercase"
-                title={`${c.name} (${c.role})`}
-              >
-                {c.name.charAt(0)}
-              </div>
-            ))}
-          </div>
-          <div className="text-left hidden sm:block">
-            <div className="text-[10px] text-slate-400 leading-none">Team Alignment</div>
-            <div className="text-xs font-bold text-emerald-400 leading-none mt-0.5">
-              {alignmentScore}% Sync
-            </div>
-          </div>
+          <FileText className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden lg:inline">Text Alt</span>
         </button>
 
-        {/* Side Tiers Panel Toggle */}
+        {/* Voice Narration Toggle */}
         <button
           onClick={() => {
-            onToggleLabels();
+            onToggleVoice();
             soundEngine.playSelect();
           }}
-          className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all shadow-xl shadow-black/50 ${
-            showLabels
-              ? 'bg-cyan-950/90 text-cyan-300 border-cyan-500/50'
-              : 'bg-slate-900/95 border-slate-700/80 text-slate-400 hover:text-white'
+          className={`p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer border ${
+            isVoiceEnabled
+              ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+              : 'bg-slate-900/95 text-slate-400 border-slate-800 hover:text-slate-200'
           }`}
-          title="Toggle Side Tier Labels Panel (outside 3D model)"
+          title={isVoiceEnabled ? 'Voice Narration: ON (Click to mute)' : 'Voice Narration: OFF (Click to unmute)'}
         >
-          <Layers className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Side Tiers: {showLabels ? 'On' : 'Off'}</span>
+          {isVoiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-cyan-400" /> : <VolumeX className="w-3.5 h-3.5" />}
+          <span className="hidden xl:inline">{isVoiceEnabled ? 'Voice ON' : 'Voice OFF'}</span>
         </button>
 
-        {/* Optional Voice Narration Toggle & Voice Settings */}
-        <div className="flex items-center bg-slate-900/95 border border-slate-700/80 rounded-xl overflow-hidden shadow-xl shadow-black/50">
-          <button
-            onClick={() => {
-              onToggleVoice();
-              soundEngine.playSelect();
-            }}
-            className={`px-3 py-2 text-xs font-bold flex items-center gap-1.5 transition-all ${
-              isVoiceEnabled
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
-                : 'text-slate-400 hover:text-white'
-            }`}
-            title="Optional Voice Narration with Contextual Emotional Tone Modulation"
-          >
-            {isVoiceEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-            <span className="hidden md:inline">Voice: {isVoiceEnabled ? 'On' : 'Off'}</span>
-            {isVoiceEnabled && (
-              <span
-                style={{ backgroundColor: EMOTIONAL_TONE_PROFILES[currentTone].color }}
-                className="w-2 h-2 rounded-full shrink-0 ring-1 ring-slate-950"
-                title={`Emotional tone: ${EMOTIONAL_TONE_PROFILES[currentTone].label}`}
-              />
-            )}
-          </button>
-
-          <button
-            onClick={() => {
-              onOpenVoiceSettings();
-              soundEngine.playSelect();
-            }}
-            className="p-2 border-l border-slate-750 text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
-            title="Voice & Emotional Tone Settings"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* Audio Mute/Unmute */}
+        {/* Screen Recording Modal */}
         <button
-          onClick={() => {
-            onToggleMute();
-            soundEngine.setMuted(!isMuted);
-          }}
-          className="p-2 rounded-xl bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-xl shadow-black/50"
-          title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+          onClick={onOpenRecordingModal}
+          className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-900/95 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-medium flex items-center gap-1.5 shadow-md transition-colors whitespace-nowrap cursor-pointer"
+          title="Record Tabletop Video Walkthrough"
         >
-          {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+          <Video className="w-3.5 h-3.5 text-rose-400" />
+          <span className="hidden xl:inline">Record</span>
         </button>
 
-        {/* Reset View Button */}
+        {/* Reset Camera View */}
         <button
-          onClick={() => {
-            onResetView();
-            soundEngine.playSelect();
-          }}
-          className="p-2 rounded-xl bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-xl shadow-black/50"
-          title="Reset Camera to Overview"
+          onClick={onResetView}
+          className="p-2 bg-slate-900/95 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 text-xs shadow-md transition-colors cursor-pointer"
+          title="Reset 3D Camera Orbit"
         >
-          <Compass className="w-4 h-4 text-cyan-400" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
     </header>

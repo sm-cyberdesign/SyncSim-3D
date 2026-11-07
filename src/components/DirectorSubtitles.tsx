@@ -5,8 +5,13 @@
 
 import React from 'react';
 import { CinematicStep } from '../types/simulation';
-import { Video, ChevronLeft, ChevronRight, X, Volume2, Mic, MicOff } from 'lucide-react';
+import { Video, ChevronLeft, ChevronRight, X, Volume2, Mic, MicOff, Server } from 'lucide-react';
 import { soundEngine } from '../utils/audio';
+
+import datacenterRacksImg from '../assets/images/datacenter_server_racks_1793152805912.jpg';
+import execCenterImg from '../assets/images/executive_command_center_1793152806402.jpg';
+import engLabImg from '../assets/images/engineering_systems_lab_1793152806463.jpg';
+import edgeNocImg from '../assets/images/edge_network_noc_1793152806611.jpg';
 
 interface DirectorSubtitlesProps {
   currentStep: CinematicStep;
@@ -20,6 +25,14 @@ interface DirectorSubtitlesProps {
   onSpeakNarration: (text: string) => void;
 }
 
+const LEVEL_THUMBNAILS: Record<number, { img: string; title: string }> = {
+  4: { img: execCenterImg, title: 'Strategic Governance Center' },
+  3: { img: engLabImg, title: 'Engineering Systems Lab' },
+  2: { img: datacenterRacksImg, title: 'Enterprise Datacenter Server Racks' },
+  1: { img: edgeNocImg, title: 'Global Edge Network Operations' },
+  0: { img: datacenterRacksImg, title: 'Full Stack Systems Architecture' },
+};
+
 export const DirectorSubtitles: React.FC<DirectorSubtitlesProps> = ({
   currentStep,
   currentStepIndex,
@@ -31,6 +44,8 @@ export const DirectorSubtitles: React.FC<DirectorSubtitlesProps> = ({
   onToggleVoice,
   onSpeakNarration,
 }) => {
+  const thumb = LEVEL_THUMBNAILS[currentStep.focusLevel] || LEVEL_THUMBNAILS[0];
+
   return (
     <div className="fixed top-18 left-1/2 -translate-x-1/2 z-30 pointer-events-auto" style={{ width: 'min(780px, 92vw)' }}>
       {/* Video Clip Presentation Overlay Card */}
@@ -38,9 +53,9 @@ export const DirectorSubtitles: React.FC<DirectorSubtitlesProps> = ({
         {/* Header row */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-2">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-red-400">
-              Live Video Walkthrough
+              Live Walkthrough Mode
             </span>
             <span className="text-slate-600">|</span>
             <span className="text-xs font-semibold text-cyan-300">
@@ -65,14 +80,25 @@ export const DirectorSubtitles: React.FC<DirectorSubtitlesProps> = ({
           </div>
         </div>
 
-        {/* Narrative text */}
-        <div className="py-1">
-          <h2 className="text-sm sm:text-base font-bold text-white mb-1">
-            {currentStep.title}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-            {currentStep.narration}
-          </p>
+        {/* Narrative text with Hardware Thumbnail */}
+        <div className="py-1 flex items-start gap-3.5">
+          <div className="hidden sm:block shrink-0 w-24 h-20 rounded-xl overflow-hidden border border-slate-700/80 relative shadow-md">
+            <img src={thumb.img} alt={thumb.title} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+            <div className="absolute bottom-1 left-1.5 right-1 text-[8px] font-mono text-cyan-300 truncate font-semibold">
+              <Server className="w-2.5 h-2.5 inline mr-0.5" />
+              {currentStep.focusLevel > 0 ? `L${currentStep.focusLevel} Hardware` : 'Datacenter'}
+            </div>
+          </div>
+
+          <div className="flex-1">
+            <h2 className="text-sm sm:text-base font-bold text-white mb-1">
+              {currentStep.title}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+              {currentStep.narration}
+            </p>
+          </div>
         </div>
 
         {/* Bottom controls */}

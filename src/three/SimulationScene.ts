@@ -485,13 +485,17 @@ export class SimulationScene {
         ring.scale.set(pulse, pulse, 1);
       });
 
-      // Slow rotation on department status crystals
-      lvl.departmentPods.forEach(pod => {
-        const crystal = pod.getObjectByName(`interactive-${pod.name.replace('pod-', '')}`);
-        if (crystal) {
-          crystal.rotation.y += delta * 1.2;
-          crystal.rotation.x += delta * 0.4;
+      // Pulse activity on department server rack status beacons
+      let podCounter = 0;
+      lvl.departmentPods.forEach((pod) => {
+        const deptId = pod.name.replace('pod-', '');
+        const beacon = pod.getObjectByName(`status-beacon-${deptId}`) as THREE.Mesh | undefined;
+        if (beacon && beacon.material) {
+          const mat = beacon.material as THREE.MeshStandardMaterial;
+          const pulse = 0.7 + Math.sin(this.currentProgress * Math.PI * 12 + podCounter) * 0.35;
+          mat.emissiveIntensity = pulse;
         }
+        podCounter++;
       });
     });
 

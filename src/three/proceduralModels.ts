@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import { MaterialLibrary } from './materials';
+import { MaterialLibrary, createServerFaceplateTexture } from './materials';
 import { OrgLevelInfo, DepartmentNode } from '../types/simulation';
 
 export interface Level3DObject {
@@ -29,7 +29,7 @@ export interface ConduitLine {
   speed: number;
 }
 
-// Build a multi-part composite department workstation pod (3–6 parts)
+// Build an enterprise 42U Datacenter Server Rack Cabinet Suite (systems and servers)
 export function createDepartmentPod(
   dept: DepartmentNode,
   level: OrgLevelInfo,
@@ -39,96 +39,141 @@ export function createDepartmentPod(
   podGroup.name = `pod-${dept.id}`;
   podGroup.position.set(dept.position[0], dept.position[1], dept.position[2]);
 
-  // 1. Primary Base Platform (Hexagonal or chamfered cylinder)
-  const baseGeo = new THREE.CylinderGeometry(0.9, 1.1, 0.25, 6);
-  const baseMat = new THREE.MeshStandardMaterial({
-    color: 0x182234,
+  const accentColor = new THREE.Color(dept.color);
+
+  // 1. Raised Datacenter Cold-Aisle Floor Pedestal
+  const tileGeo = new THREE.BoxGeometry(1.6, 0.12, 1.4);
+  const tileMat = new THREE.MeshStandardMaterial({
+    color: 0x162032,
     roughness: 0.35,
     metalness: 0.8,
   });
-  const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-  baseMesh.position.y = 0.125;
-  baseMesh.castShadow = true;
-  baseMesh.receiveShadow = true;
-  podGroup.add(baseMesh);
+  const tileMesh = new THREE.Mesh(tileGeo, tileMat);
+  tileMesh.position.y = 0.06;
+  tileMesh.castShadow = true;
+  tileMesh.receiveShadow = true;
+  podGroup.add(tileMesh);
 
-  // 2. Beveled Metallic Accent Ring
-  const ringGeo = new THREE.TorusGeometry(0.95, 0.06, 8, 24);
-  const accentColor = new THREE.Color(dept.color);
-  const ringMat = new THREE.MeshStandardMaterial({
+  // Beveled Edge Trim around floor tile
+  const tileTrimGeo = new THREE.BoxGeometry(1.64, 0.04, 1.44);
+  const tileTrimMat = new THREE.MeshStandardMaterial({
     color: accentColor,
     emissive: accentColor,
-    emissiveIntensity: 0.5,
-    roughness: 0.2,
+    emissiveIntensity: 0.3,
+    roughness: 0.25,
     metalness: 0.9,
   });
-  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-  ringMesh.rotation.x = Math.PI / 2;
-  ringMesh.position.y = 0.26;
-  podGroup.add(ringMesh);
+  const tileTrimMesh = new THREE.Mesh(tileTrimGeo, tileTrimMat);
+  tileTrimMesh.position.y = 0.11;
+  podGroup.add(tileTrimMesh);
 
-  // 3. Central Console / Holographic Hub Housing
-  const consoleGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.5, 8);
-  const consoleMat = new THREE.MeshStandardMaterial({
-    color: 0x22324e,
-    roughness: 0.4,
-    metalness: 0.7,
-  });
-  const consoleMesh = new THREE.Mesh(consoleGeo, consoleMat);
-  consoleMesh.position.y = 0.5;
-  podGroup.add(consoleMesh);
+  // 2. Primary 42U Server Rack Cabinet
+  // Dimensions: width 0.85, height 1.85, depth 0.9
+  const rackGeo = new THREE.BoxGeometry(0.85, 1.85, 0.9);
+  const faceplateTex = createServerFaceplateTexture(dept.color, dept.name);
 
-  // 4. Floating Holographic Status Crystal (Interactive Raycast target)
-  const crystalGeo = new THREE.OctahedronGeometry(0.32, 0);
-  const crystalMat = new THREE.MeshStandardMaterial({
-    color: accentColor,
-    emissive: accentColor,
-    emissiveIntensity: 0.8,
-    roughness: 0.1,
-    metalness: 0.3,
-    transparent: true,
-    opacity: 0.9,
+  const frontMat = new THREE.MeshStandardMaterial({
+    map: faceplateTex,
+    roughness: 0.32,
+    metalness: 0.75,
   });
-  const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
-  crystalMesh.position.y = 1.05;
-  crystalMesh.name = `interactive-${dept.id}`;
-  // Attach metadata for raycasting
-  crystalMesh.userData = {
+
+  const sideRearMat = materials.serverChassisMaterial;
+  const rackMaterials = [
+    sideRearMat, // +X right
+    sideRearMat, // -X left
+    sideRearMat, // +Y top
+    sideRearMat, // -Y bottom
+    frontMat,    // +Z front (textured with blade slots, LEDs, drive bays!)
+    sideRearMat, // -Z rear
+  ];
+
+  const rackMesh = new THREE.Mesh(rackGeo, rackMaterials);
+  rackMesh.position.set(-0.15, 0.12 + 1.85 / 2, 0);
+  rackMesh.castShadow = true;
+  rackMesh.receiveShadow = true;
+  rackMesh.name = `interactive-${dept.id}`;
+  rackMesh.userData = {
     type: 'department',
     deptId: dept.id,
     levelId: dept.levelId,
     department: dept,
   };
-  podGroup.add(crystalMesh);
+  podGroup.add(rackMesh);
 
-  // 5. Orbital Status Rings
-  const orbitGeo = new THREE.RingGeometry(0.5, 0.54, 24);
-  const orbitMat = new THREE.MeshBasicMaterial({
+  // 3. Top Status LED Beacon Bar on Primary Cabinet
+  const beaconGeo = new THREE.BoxGeometry(0.82, 0.06, 0.06);
+  const beaconMat = new THREE.MeshStandardMaterial({
     color: accentColor,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.6,
+    emissive: accentColor,
+    emissiveIntensity: 0.95,
+    roughness: 0.1,
+    metalness: 0.5,
   });
-  const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
-  orbitMesh.rotation.x = Math.PI / 2;
-  orbitMesh.position.y = 1.05;
-  podGroup.add(orbitMesh);
+  const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+  beaconMesh.position.set(-0.15, 0.12 + 1.85 + 0.03, 0.44);
+  beaconMesh.name = `status-beacon-${dept.id}`;
+  podGroup.add(beaconMesh);
 
-  // 6. Glowing Floor Projection Cone
-  const coneGeo = new THREE.ConeGeometry(0.5, 0.6, 12, 1, true);
-  const coneMat = new THREE.MeshBasicMaterial({
-    color: accentColor,
+  // 4. Twin Satellite 42U Expansion Server Rack (Angled to create authentic enterprise datacenter row)
+  const satGeo = new THREE.BoxGeometry(0.75, 1.7, 0.82);
+  const satMesh = new THREE.Mesh(satGeo, rackMaterials);
+  satMesh.position.set(0.65, 0.12 + 1.7 / 2, -0.08);
+  satMesh.rotation.y = -0.22;
+  satMesh.castShadow = true;
+  satMesh.receiveShadow = true;
+  podGroup.add(satMesh);
+
+  // Satellite Top Status LED
+  const satBeaconGeo = new THREE.BoxGeometry(0.72, 0.05, 0.05);
+  const satBeaconMesh = new THREE.Mesh(satBeaconGeo, beaconMat);
+  satBeaconMesh.position.set(0.65, 0.12 + 1.7 + 0.025, 0.32);
+  satBeaconMesh.rotation.y = -0.22;
+  podGroup.add(satBeaconMesh);
+
+  // 5. Overhead Yellow Optical Fiber Raceway (Cable Ladder / Tray)
+  const trayGeo = new THREE.BoxGeometry(1.65, 0.08, 0.32);
+  const trayMesh = new THREE.Mesh(trayGeo, materials.fiberRacewayMaterial);
+  trayMesh.position.set(0.15, 0.12 + 1.85 + 0.22, 0);
+  podGroup.add(trayMesh);
+
+  // Vertical yellow cable drop chute descending from overhead tray into rack top
+  const dropChuteGeo = new THREE.BoxGeometry(0.2, 0.2, 0.25);
+  const dropChuteMesh = new THREE.Mesh(dropChuteGeo, materials.fiberRacewayMaterial);
+  dropChuteMesh.position.set(-0.15, 0.12 + 1.85 + 0.1, 0);
+  podGroup.add(dropChuteMesh);
+
+  // 6. Glowing Optical Patch Cables running into top drop chute
+  const cableColors = [0x38bdf8, 0x10b981, 0xf59e0b];
+  cableColors.forEach((col, cIdx) => {
+    const cableGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.35, 6);
+    const cableMat = new THREE.MeshStandardMaterial({
+      color: col,
+      emissive: col,
+      emissiveIntensity: 0.8,
+      roughness: 0.2,
+      metalness: 0.6,
+    });
+    const cableMesh = new THREE.Mesh(cableGeo, cableMat);
+    cableMesh.position.set(-0.2 + cIdx * 0.05, 0.12 + 1.85 + 0.16, 0.05);
+    podGroup.add(cableMesh);
+  });
+
+  // 7. Cold-Aisle Plenum Upward Airflow Glow on Floor
+  const airGlowGeo = new THREE.PlaneGeometry(1.4, 0.4);
+  const airGlowMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
     transparent: true,
-    opacity: 0.18,
+    opacity: 0.15,
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
   });
-  const coneMesh = new THREE.Mesh(coneGeo, coneMat);
-  coneMesh.rotation.x = Math.PI;
-  coneMesh.position.y = 0.8;
-  podGroup.add(coneMesh);
+  const airGlowMesh = new THREE.Mesh(airGlowGeo, airGlowMat);
+  airGlowMesh.rotation.x = -Math.PI / 2;
+  airGlowMesh.position.set(0.15, 0.13, 0.55);
+  podGroup.add(airGlowMesh);
 
-  return { group: podGroup, interactiveMesh: crystalMesh };
+  return { group: podGroup, interactiveMesh: rackMesh };
 }
 
 // Build full composite architectural floor for an organizational tier

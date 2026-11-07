@@ -5,8 +5,12 @@
 
 import React from 'react';
 import { HistoricalSnapshot, SimulationParameters } from '../types/simulation';
-import { History, Calendar, CheckCircle, TrendingUp, AlertOctagon, ArrowRight, Play } from 'lucide-react';
+import { History, Calendar, CheckCircle, TrendingUp, AlertOctagon, ArrowRight, Play, Server } from 'lucide-react';
 import { soundEngine } from '../utils/audio';
+
+import datacenterRacksImg from '../assets/images/datacenter_server_racks_1793152805912.jpg';
+import edgeNocImg from '../assets/images/edge_network_noc_1793152806611.jpg';
+import engineeringLabImg from '../assets/images/engineering_systems_lab_1793152806463.jpg';
 
 interface HistoricalViewOverlayProps {
   snapshots: HistoricalSnapshot[];
@@ -15,6 +19,12 @@ interface HistoricalViewOverlayProps {
   onApplySnapshotToLive: (params: SimulationParameters) => void;
   onClose: () => void;
 }
+
+const SNAPSHOT_IMAGES: Record<string, string> = {
+  'snap-q4-blitz': engineeringLabImg,
+  'snap-black-swan': datacenterRacksImg,
+  'snap-post-agile': edgeNocImg,
+};
 
 export const HistoricalViewOverlay: React.FC<HistoricalViewOverlayProps> = ({
   snapshots,
@@ -56,29 +66,37 @@ export const HistoricalViewOverlay: React.FC<HistoricalViewOverlayProps> = ({
 
         {/* Snapshot selector chips */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {snapshots.map(snap => (
-            <button
-              key={snap.id}
-              onClick={() => {
-                onSelectSnapshot(snap);
-                soundEngine.playSelect();
-              }}
-              className={`p-3 rounded-xl text-left border transition-all ${
-                selectedSnapshot.id === snap.id
-                  ? 'bg-amber-950/40 border-amber-500/80 shadow-md shadow-amber-950/40'
-                  : 'bg-slate-950/50 border-slate-800 hover:border-slate-700 text-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-amber-400" />
-                  {snap.date}
-                </span>
-                <span className="font-mono text-amber-400 font-bold">{snap.avgEfficiency}% Eff</span>
-              </div>
-              <div className="text-xs font-bold text-white line-clamp-1">{snap.title}</div>
-            </button>
-          ))}
+          {snapshots.map(snap => {
+            const img = SNAPSHOT_IMAGES[snap.id] || datacenterRacksImg;
+            return (
+              <button
+                key={snap.id}
+                onClick={() => {
+                  onSelectSnapshot(snap);
+                  soundEngine.playSelect();
+                }}
+                className={`p-2.5 rounded-xl text-left border transition-all overflow-hidden flex flex-col justify-between ${
+                  selectedSnapshot.id === snap.id
+                    ? 'bg-amber-950/40 border-amber-500/80 shadow-md shadow-amber-950/40'
+                    : 'bg-slate-950/50 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+              >
+                <div className="relative h-14 w-full rounded-lg overflow-hidden mb-2 border border-slate-800">
+                  <img src={img} alt={snap.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                  <span className="absolute bottom-1 left-1.5 text-[9px] font-mono text-amber-300 font-bold flex items-center gap-1">
+                    <Server className="w-2.5 h-2.5" />
+                    Archive {snap.date}
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-white line-clamp-1">{snap.title}</div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                  <span>{snap.incidentCount} incidents</span>
+                  <span className="font-mono text-amber-400 font-bold">{snap.avgEfficiency}% Eff</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Selected snapshot deep-dive card */}
